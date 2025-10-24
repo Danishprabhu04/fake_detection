@@ -17,7 +17,7 @@ app = FastAPI(
 # Add middleware
 add_cors_middleware(app)
 add_error_handlers(app)
-add_rate_limiting(app)
+# add_rate_limiting(app)
 
 @app.on_event("startup")
 async def startup_event():

@@ -1,0 +1,58 @@
+2025-10-24 09:16:19,381 - INFO - Connected to MongoDB: fake_news_detection using PyMongo
+2025-10-24 09:16:23,009 - INFO - Spark session created for MapReduce: FakeNewsDetection
+2025-10-24 09:16:23,009 - INFO - ================================================================================
+2025-10-24 09:16:23,009 - INFO - FAKE NEWS DETECTION SYSTEM - DATA INGESTION & ANALYSIS
+2025-10-24 09:16:23,009 - INFO - ================================================================================
+2025-10-24 09:16:23,014 - INFO - Successfully inserted 1 records into videos using PyMongo
+2025-10-24 09:16:23,014 - INFO - Starting Hybrid Analysis Workflow...
+2025-10-24 09:16:23,014 - INFO - Phase 1: PyMongo - Data validation and preparation
+2025-10-24 09:16:23,015 - WARNING - No data found. Please load data first.
+2025-10-24 09:16:23,019 - INFO - Final data statistics: {'collections': {'users': 0, 'videos': 1, 'comments': 0, 'analyses': 0, 'reports': 0}, 'total_documents': 1}
+2025-10-24 09:16:23,019 - INFO - ================================================================================
+2025-10-24 09:16:23,019 - INFO - ANALYSIS COMPLETED SUCCESSFULLY
+2025-10-24 09:16:23,019 - INFO - ================================================================================
+2025-10-24 09:16:23,019 - INFO - PyMongo connection closed
+2025-10-24 09:16:23,266 - INFO - PySpark session stopped
+2025-10-24 09:16:23,387 - INFO - Closing down clientserver connection
+2025-10-24 09:17:25,139 - INFO - Connected to MongoDB: fake_news_detection using PyMongo
+2025-10-24 09:17:28,000 - INFO - Spark session created for MapReduce: FakeNewsDetection
+2025-10-24 09:17:28,000 - INFO - ================================================================================
+2025-10-24 09:17:28,001 - INFO - FAKE NEWS DETECTION SYSTEM - DATA INGESTION & ANALYSIS
+2025-10-24 09:17:28,001 - INFO - ================================================================================
+2025-10-24 09:17:28,011 - ERROR - Error in PyMongo bulk insert: batch op errors occurred, full error: {'writeErrors': [{'index': 0, 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: fake_news_detection.videos index: video_id_1 dup key: { video_id: "dQw4w9WgXcQ" }', 'keyPattern': {'video_id': 1}, 'keyValue': {'video_id': 'dQw4w9WgXcQ'}, 'op': {'video_id': 'dQw4w9WgXcQ', 'title': 'Never Gonna Give You Up', 'description': 'Official music video', 'channel_title': 'RickAstleyVEVO', 'view_count': 1234567890, 'like_count': 54321098, 'comment_count': 98765, 'added_at': datetime.datetime(2025, 10, 24, 3, 47, 28, 1184), 'created_at': datetime.datetime(2025, 10, 24, 3, 47, 28, 1193), 'updated_at': datetime.datetime(2025, 10, 24, 3, 47, 28, 1197), '_id': ObjectId('68faf6d0e7aa01a9d61dd547')}}], 'writeConcernErrors': [], 'nInserted': 0, 'nUpserted': 0, 'nMatched': 0, 'nModified': 0, 'nRemoved': 0, 'upserted': []}
+2025-10-24 09:17:28,011 - ERROR - Error in main execution: batch op errors occurred, full error: {'writeErrors': [{'index': 0, 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: fake_news_detection.videos index: video_id_1 dup key: { video_id: "dQw4w9WgXcQ" }', 'keyPattern': {'video_id': 1}, 'keyValue': {'video_id': 'dQw4w9WgXcQ'}, 'op': {'video_id': 'dQw4w9WgXcQ', 'title': 'Never Gonna Give You Up', 'description': 'Official music video', 'channel_title': 'RickAstleyVEVO', 'view_count': 1234567890, 'like_count': 54321098, 'comment_count': 98765, 'added_at': datetime.datetime(2025, 10, 24, 3, 47, 28, 1184), 'created_at': datetime.datetime(2025, 10, 24, 3, 47, 28, 1193), 'updated_at': datetime.datetime(2025, 10, 24, 3, 47, 28, 1197), '_id': ObjectId('68faf6d0e7aa01a9d61dd547')}}], 'writeConcernErrors': [], 'nInserted': 0, 'nUpserted': 0, 'nMatched': 0, 'nModified': 0, 'nRemoved': 0, 'upserted': []}
+2025-10-24 09:17:28,012 - INFO - PyMongo connection closed
+2025-10-24 09:17:28,420 - INFO - PySpark session stopped
+2025-10-24 09:17:28,430 - INFO - Closing down clientserver connection
+2025-10-24 10:13:32,728 - INFO - Setting up MongoDB collections and indexes in: fake_news_detection
+2025-10-24 10:13:32,733 - WARNING - Users indexes might already exist: Index already exists with a different name: email_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: email_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2025-10-24 10:13:32,734 - WARNING - Videos indexes might already exist: Index already exists with a different name: video_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: video_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2025-10-24 10:13:32,741 - WARNING - Comments indexes might already exist: Index already exists with a different name: video_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: video_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2025-10-24 10:13:32,742 - WARNING - Analyses indexes might already exist: Index already exists with a different name: video_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: video_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2025-10-24 10:13:32,742 - WARNING - Reports indexes might already exist: Index already exists with a different name: video_id_1, full error: {'ok': 0.0, 'errmsg': 'Index already exists with a different name: video_id_1', 'code': 85, 'codeName': 'IndexOptionsConflict'}
+2025-10-24 10:13:32,780 - INFO - All collections and indexes created successfully
+2025-10-24 10:13:32,781 - INFO - Inserting sample data...
+2025-10-24 10:13:32,782 - INFO - Sample user inserted with ID: 68fb03f45b415c35d943e11c
+2025-10-24 10:13:32,782 - INFO - Sample data insertion completed
+2025-10-24 10:13:32,818 - INFO - Database stats: 445.0 bytes
+2025-10-24 10:13:32,819 - INFO - MongoDB connection closed
+2025-10-24 10:13:40,251 - INFO - Connected to MongoDB: fake_news_detection using PyMongo
+2025-10-24 10:13:45,065 - INFO - Spark session created for MapReduce: FakeNewsDetection
+2025-10-24 10:13:45,066 - INFO - ================================================================================
+2025-10-24 10:13:45,066 - INFO - FAKE NEWS DETECTION SYSTEM - DATA INGESTION & ANALYSIS
+2025-10-24 10:13:45,066 - INFO - ================================================================================
+2025-10-24 10:13:45,069 - ERROR - Error in PyMongo bulk insert: batch op errors occurred, full error: {'writeErrors': [{'index': 0, 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: fake_news_detection.videos index: video_id_1 dup key: { video_id: "dQw4w9WgXcQ" }', 'keyPattern': {'video_id': 1}, 'keyValue': {'video_id': 'dQw4w9WgXcQ'}, 'op': {'video_id': 'dQw4w9WgXcQ', 'title': 'Never Gonna Give You Up', 'description': 'Official music video', 'channel_title': 'RickAstleyVEVO', 'view_count': 1234567890, 'like_count': 54321098, 'comment_count': 98765, 'added_at': datetime.datetime(2025, 10, 24, 4, 43, 45, 66744), 'created_at': datetime.datetime(2025, 10, 24, 4, 43, 45, 66760), 'updated_at': datetime.datetime(2025, 10, 24, 4, 43, 45, 66765), '_id': ObjectId('68fb04017a095165b7e6c5de')}}], 'writeConcernErrors': [], 'nInserted': 0, 'nUpserted': 0, 'nMatched': 0, 'nModified': 0, 'nRemoved': 0, 'upserted': []}
+2025-10-24 10:13:45,069 - ERROR - Error in main execution: batch op errors occurred, full error: {'writeErrors': [{'index': 0, 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: fake_news_detection.videos index: video_id_1 dup key: { video_id: "dQw4w9WgXcQ" }', 'keyPattern': {'video_id': 1}, 'keyValue': {'video_id': 'dQw4w9WgXcQ'}, 'op': {'video_id': 'dQw4w9WgXcQ', 'title': 'Never Gonna Give You Up', 'description': 'Official music video', 'channel_title': 'RickAstleyVEVO', 'view_count': 1234567890, 'like_count': 54321098, 'comment_count': 98765, 'added_at': datetime.datetime(2025, 10, 24, 4, 43, 45, 66744), 'created_at': datetime.datetime(2025, 10, 24, 4, 43, 45, 66760), 'updated_at': datetime.datetime(2025, 10, 24, 4, 43, 45, 66765), '_id': ObjectId('68fb04017a095165b7e6c5de')}}], 'writeConcernErrors': [], 'nInserted': 0, 'nUpserted': 0, 'nMatched': 0, 'nModified': 0, 'nRemoved': 0, 'upserted': []}
+2025-10-24 10:13:45,070 - INFO - PyMongo connection closed
+2025-10-24 10:13:45,237 - INFO - PySpark session stopped
+2025-10-24 10:13:45,258 - INFO - Closing down clientserver connection
+2025-10-24 10:54:52,170 - INFO - Connected to MongoDB: fake_news_detection using PyMongo
+2025-10-24 10:54:55,366 - INFO - Spark session created for MapReduce: FakeNewsDetection
+2025-10-24 10:54:55,366 - INFO - ================================================================================
+2025-10-24 10:54:55,366 - INFO - FAKE NEWS DETECTION SYSTEM - DATA INGESTION & ANALYSIS
+2025-10-24 10:54:55,366 - INFO - ================================================================================
+2025-10-24 10:54:55,368 - ERROR - Error in PyMongo bulk insert: batch op errors occurred, full error: {'writeErrors': [{'index': 0, 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: fake_news_detection.videos index: video_id_1 dup key: { video_id: "dQw4w9WgXcQ" }', 'keyPattern': {'video_id': 1}, 'keyValue': {'video_id': 'dQw4w9WgXcQ'}, 'op': {'video_id': 'dQw4w9WgXcQ', 'title': 'Never Gonna Give You Up', 'description': 'Official music video', 'channel_title': 'RickAstleyVEVO', 'view_count': 1234567890, 'like_count': 54321098, 'comment_count': 98765, 'added_at': datetime.datetime(2025, 10, 24, 5, 24, 55, 366656), 'created_at': datetime.datetime(2025, 10, 24, 5, 24, 55, 366665), 'updated_at': datetime.datetime(2025, 10, 24, 5, 24, 55, 366667), '_id': ObjectId('68fb0da74e67fe51240388ab')}}], 'writeConcernErrors': [], 'nInserted': 0, 'nUpserted': 0, 'nMatched': 0, 'nModified': 0, 'nRemoved': 0, 'upserted': []}
+2025-10-24 10:54:55,368 - ERROR - Error in main execution: batch op errors occurred, full error: {'writeErrors': [{'index': 0, 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: fake_news_detection.videos index: video_id_1 dup key: { video_id: "dQw4w9WgXcQ" }', 'keyPattern': {'video_id': 1}, 'keyValue': {'video_id': 'dQw4w9WgXcQ'}, 'op': {'video_id': 'dQw4w9WgXcQ', 'title': 'Never Gonna Give You Up', 'description': 'Official music video', 'channel_title': 'RickAstleyVEVO', 'view_count': 1234567890, 'like_count': 54321098, 'comment_count': 98765, 'added_at': datetime.datetime(2025, 10, 24, 5, 24, 55, 366656), 'created_at': datetime.datetime(2025, 10, 24, 5, 24, 55, 366665), 'updated_at': datetime.datetime(2025, 10, 24, 5, 24, 55, 366667), '_id': ObjectId('68fb0da74e67fe51240388ab')}}], 'writeConcernErrors': [], 'nInserted': 0, 'nUpserted': 0, 'nMatched': 0, 'nModified': 0, 'nRemoved': 0, 'upserted': []}
+2025-10-24 10:54:55,368 - INFO - PyMongo connection closed
+2025-10-24 10:54:55,635 - INFO - PySpark session stopped
+2025-10-24 10:54:55,675 - INFO - Closing down clientserver connection

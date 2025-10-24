@@ -18,7 +18,7 @@ from pyspark.sql.functions import col, count, avg, sum as spark_sum, regexp_repl
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType, BooleanType, TimestampType
 import pandas as pd
 from dotenv import load_dotenv
-
+from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
