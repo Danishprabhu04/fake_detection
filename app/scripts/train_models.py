@@ -51,6 +51,7 @@ class ModelTrainer:
             'category_id': 1
         }))
         
+        
         df = pd.DataFrame(videos)
         
         # Create features
