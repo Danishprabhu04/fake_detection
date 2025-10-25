@@ -1,11 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import settings
-from app.database import init_db
+import joblib
+from pathlib import Path
+import logging
+
 from app.routes import auth, video, comment, report, admin, analytics
-from app.middleware.cors import add_cors_middleware
-from app.middleware.error_handler import add_error_handlers
-from app.middleware.rate_limiter import add_rate_limiting
+from app.database import init_db
 
 app = FastAPI(
     title="Fake News Detection API",
@@ -14,10 +14,41 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json"
 )
 
-# Add middleware
-add_cors_middleware(app)
-add_error_handlers(app)
-# add_rate_limiting(app)
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# CORS middleware configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Load ML models
+try:
+    models_dir = Path("data/models")
+    models_dir.mkdir(parents=True, exist_ok=True)
+    
+    model_files = {
+        'fake_news_detector': 'fake_news_detector.pkl',
+        'text_vectorizer': 'text_vectorizer.pkl',
+        'feature_columns': 'feature_columns.pkl'
+    }
+    
+    models = {}
+    for name, filename in model_files.items():
+        file_path = models_dir / filename
+        if file_path.exists():
+            models[name] = joblib.load(file_path)
+            logger.info(f"Loaded {name} from {filename}")
+        else:
+            logger.warning(f"Model file not found: {filename}")
+            
+except Exception as e:
+    logger.error(f"Error loading models: {e}")
 
 @app.on_event("startup")
 async def startup_event():
