@@ -97,6 +97,7 @@ class ModelTrainer:
             }
         ]
         
+        
         training_data = list(self.db.comments.aggregate(pipeline))
         logger.info(f"Loaded {len(training_data)} training samples with PyMongo")
         
