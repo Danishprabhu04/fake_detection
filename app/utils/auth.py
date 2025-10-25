@@ -1,49 +1,113 @@
 from datetime import datetime, timedelta
 from typing import Optional
-import jwt
+from jose import jwt  # Change from jwt to python-jose
+import bcrypt
 from passlib.context import CryptContext
 from app.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+# Initialize password context with bcrypt
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12
+)
 
 def hash_password(password: str) -> str:
-    """Hash password"""
-    return pwd_context.hash(password)
+    """Hash a password with length validation and truncation"""
+    if not password:
+        raise ValueError("Password cannot be empty")
+    
+    # Convert to bytes and truncate to bcrypt's 72-byte limit
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+    
+    # Generate salt and hash
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
-def create_access_token( dict, expires_delta: Optional[timedelta] = None):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password with length validation"""
+    if not plain_password or not hashed_password:
+        return False
+    
+    try:
+        # Convert to bytes and truncate if necessary
+        password_bytes = plain_password.encode('utf-8')
+        if len(password_bytes) > 72:
+            password_bytes = password_bytes[:72]
+        
+        # Convert hash to bytes if it's a string
+        hashed_bytes = hashed_password.encode('utf-8') if isinstance(hashed_password, str) else hashed_password
+        
+        # Verify
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
+    except (ValueError, TypeError):
+        return False
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
     
-    to_encode.update({"exp": expire})
+    # Set expiration time
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=30))
+    to_encode.update({
+        "exp": expire,
+        "iat": datetime.utcnow(),
+        "type": "access"
+    })
+    
+    # Create token
     encoded_jwt = jwt.encode(
-        to_encode, 
-        settings.secret_key, 
+        to_encode,
+        settings.secret_key,
         algorithm=settings.algorithm
     )
+    
+    return encoded_jwt
+
+def create_refresh_token(data: dict) -> str:
+    """Create JWT refresh token"""
+    to_encode = data.copy()
+    
+    # Set expiration for refresh token (longer than access token)
+    expire = datetime.utcnow() + timedelta(days=7)
+    to_encode.update({
+        "exp": expire,
+        "iat": datetime.utcnow(),
+        "type": "refresh"
+    })
+    
+    # Create token
+    encoded_jwt = jwt.encode(
+        to_encode,
+        settings.secret_key,
+        algorithm=settings.algorithm
+    )
+    
     return encoded_jwt
 
 def verify_token(token: str) -> Optional[dict]:
     """Verify JWT token"""
     try:
         payload = jwt.decode(
-            token, 
-            settings.secret_key, 
+            token,
+            settings.secret_key,
             algorithms=[settings.algorithm]
         )
         return payload
-    except jwt.PyJWTError:
+    except jwt.JWTError:
         return None
 
 async def get_current_user(token: str):
-    """Get current user from token - placeholder implementation"""
-    # This is a simplified version for now
-    # In production, you'd properly decode and validate the token
-    return None
+    """Get current user from token"""
+    payload = verify_token(token)
+    if not payload:
+        return None
+    
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+    
+    return {"id": user_id, "username": payload.get("username")}

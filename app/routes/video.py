@@ -8,9 +8,24 @@ from app.database import get_database
 from app.utils.auth import get_current_user
 from app.models.user import User
 import logging
+from pydantic import BaseModel, HttpUrl
+from typing import Dict, Any
+from datetime import datetime
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+class URLIn(BaseModel):
+    url: HttpUrl
+
+class URLAnalysisOut(BaseModel):
+    status: str
+    video_id: str
+    title: str
+    channel_title: str
+    is_fake: bool
+    confidence: float
+    analyzed_at: str
 
 @router.post("/", response_model=VideoResponse)
 async def add_video(
@@ -132,3 +147,29 @@ async def get_video_analysis(video_id: str):
         raise HTTPException(status_code=404, detail="Analysis not found")
     
     return AnalysisResponse(**analysis)
+
+@router.post("/analyze-url", response_model=URLAnalysisOut)
+async def analyze_by_url(payload: URLIn, current_user: Dict[str, Any] = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    try:
+        result = predict_from_url(payload.url)
+        analyzed_at = datetime.utcnow().isoformat()
+        out = {
+            "status": "success",
+            "video_id": result["video_id"],
+            "title": result["title"],
+            "channel_title": result.get("channel_title", ""),
+            "is_fake": result["is_fake"],
+            "confidence": round(result["probability"] * 100, 2),
+            "analyzed_at": analyzed_at
+        }
+        # persist analysis
+        db.video_analyses.insert_one({**out, "user_id": current_user["id"], "created_at": datetime.utcnow()})
+        return out
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except FileNotFoundError as fe:
+        raise HTTPException(status_code=500, detail="Model not found. Train models first.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

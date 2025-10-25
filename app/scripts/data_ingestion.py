@@ -11,10 +11,11 @@ from datetime import datetime
 from typing import List, Dict, Any
 import json
 import asyncio
-from pymongo import MongoClient
+from pathlib import Path  # Add this import
+from pymongo import MongoClient, UpdateOne
 from pymongo.collection import Collection
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, count, avg, sum as spark_sum, regexp_replace, lower, when
+from pyspark.sql.functions import col, count, avg, sum as spark_sum, regexp_replace, lower, when, explode
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType, BooleanType, TimestampType
 import pandas as pd
 from dotenv import load_dotenv
@@ -26,6 +27,7 @@ load_dotenv()
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.config import settings
+from app.utils.logger import setup_logger
 
 # Configure logging
 logging.basicConfig(
@@ -52,16 +54,10 @@ class DataIngestionManager:
         self.mongo_client = MongoClient(settings.mongodb_url)
         self.db = self.mongo_client[settings.mongodb_database]
         
-        # Get collections
-        self.collections = {
-            'users': self.db.users,
-            'videos': self.db.videos,
-            'comments': self.db.comments,
-            'analyses': self.db.analyses,
-            'reports': self.db.reports
-        }
+        # Create index on videos collection
+        self.db.videos.create_index([("video_id", 1)], unique=True)
         
-        logger.info(f"Connected to MongoDB: {settings.mongodb_database} using PyMongo")
+        logger.info(f"Connected to MongoDB: {settings.mongodb_database}")
         
         # Spark session for MapReduce operations
         self.spark = SparkSession.builder \
@@ -368,6 +364,114 @@ class DataIngestionManager:
         
         return stats
     
+    def cleanup_collections(self):
+        """Remove existing collections before fresh ingestion"""
+        # Only cleanup videos collection
+        if 'videos' in self.db.list_collection_names():
+            self.db.drop_collection('videos')
+            logger.info("Dropped collection: videos")
+
+    def process_videos_csv(self, region: str, file_path: Path) -> None:
+        """Process video CSV files for a specific region"""
+        try:
+            df = pd.read_csv(
+                file_path,
+                encoding='utf-8',
+                encoding_errors='replace',
+                on_bad_lines='skip'
+            )
+
+            # Clean and prepare data
+            videos = []
+            for _, row in df.iterrows():
+                video = row.to_dict()
+                video['region'] = region
+                video['ingestion_date'] = datetime.now()
+                video['source_file'] = str(file_path.name)
+                
+                # Convert numeric fields
+                numeric_fields = ['view_count', 'likes', 'dislikes', 'comment_count']
+                for field in numeric_fields:
+                    try:
+                        video[field] = int(float(video.get(field, 0)))
+                    except (ValueError, TypeError):
+                        video[field] = 0
+
+                videos.append(video)
+
+            # Insert into single videos collection
+            operations = [
+                UpdateOne(
+                    {'video_id': video['video_id']},
+                    {'$set': video},
+                    upsert=True
+                ) for video in videos
+            ]
+
+            result = self.db.videos.bulk_write(operations)
+            logger.info(f"Region {region} videos processed: {result.upserted_count} inserted, {result.modified_count} updated")
+        except Exception as e:
+            logger.error(f"Error processing videos CSV for region {region}: {str(e)}")
+            raise
+
+    def process_categories_json(self, region: str, file_path: Path) -> None:
+        """Process category JSON files for a specific region"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            categories = data.get('items', [])
+            if not categories:
+                logger.warning(f"No categories found in {file_path}")
+                return
+
+            # Add metadata to categories
+            for category in categories:
+                category['region'] = region
+                category['ingestion_date'] = datetime.now()
+
+            # Bulk upsert operations
+            collection = self.db[f"{region.lower()}_categories"]
+            operations = [
+                UpdateOne(
+                    {'id': category['id']},
+                    {'$set': category},
+                    upsert=True
+                ) for category in categories
+            ]
+
+            result = collection.bulk_write(operations)
+            logger.info(f"Region {region} categories processed: {result.upserted_count} inserted, {result.modified_count} updated")
+
+        except Exception as e:
+            logger.error(f"Error processing {region} categories: {str(e)}")
+            raise
+
+    def verify_ingestion(self):
+        """Verify data ingestion results"""
+        logger.info("\nData Ingestion Summary:")
+        logger.info("=" * 50)
+        
+        # Get total video count
+        total_videos = self.db.videos.count_documents({})
+        
+        # Count videos by region
+        pipeline = [
+            {"$group": {"_id": "$region", "count": {"$sum": 1}}},
+            {"$sort": {"_id": 1}}
+        ]
+        
+        region_counts = list(self.db.videos.aggregate(pipeline))
+        
+        logger.info("Videos by Region:")
+        for result in region_counts:
+            region = result['_id']
+            count = result['count']
+            logger.info(f"{region}: {count:,} videos")
+        
+        logger.info("=" * 50)
+        logger.info(f"Total Videos in Collection: {total_videos:,}")
+
     def cleanup(self):
         """Clean up connections"""
         if self.mongo_client:
@@ -379,47 +483,42 @@ class DataIngestionManager:
             logger.info("PySpark session stopped")
 
 def main():
-    """Main function demonstrating the use of both PyMongo and PySpark"""
+    """Main function for data ingestion"""
     manager = DataIngestionManager()
     
     try:
         logger.info("=" * 80)
-        logger.info("FAKE NEWS DETECTION SYSTEM - DATA INGESTION & ANALYSIS")
+        logger.info("FAKE NEWS DETECTION SYSTEM - DATA INGESTION")
         logger.info("=" * 80)
         
-        # Example: Load and insert sample data using PyMongo
-        sample_data = [
-            {
-                "video_id": "dQw4w9WgXcQ",
-                "title": "Never Gonna Give You Up",
-                "description": "Official music video",
-                "channel_title": "RickAstleyVEVO",
-                "view_count": 1234567890,
-                "like_count": 54321098,
-                "comment_count": 98765,
-                "added_at": datetime.utcnow()
-            }
-        ]
+        # Clean up videos collection
+        manager.cleanup_collections()
         
-        # Insert using PyMongo
-        manager.bulk_insert_with_pymongo('videos', sample_data)
+        # Get dataset path
+        dataset_path = Path(__file__).parent.parent.parent.parent / "dataset"
+        if not dataset_path.exists():
+            raise FileNotFoundError(f"Dataset directory not found at {dataset_path}")
+
+        # Process videos from all regions
+        regions = ['US', 'GB', 'DE', 'CA', 'FR', 'IN', 'JP', 'KR', 'MX', 'RU']
         
-        # Perform hybrid analysis using both PyMongo and PySpark
-        manager.hybrid_analysis_workflow()
-        
-        # Get final statistics
-        stats = manager.get_data_statistics()
-        logger.info(f"Final data statistics: {stats}")
+        for region in regions:
+            video_file = dataset_path / f"{region}videos.csv"
+            if video_file.exists():
+                logger.info(f"Processing {region} videos from {video_file}")
+                manager.process_videos_csv(region, video_file)
+            else:
+                logger.warning(f"Video file not found: {video_file}")
+
+        # Verify ingestion results
+        manager.verify_ingestion()
         
         logger.info("=" * 80)
-        logger.info("ANALYSIS COMPLETED SUCCESSFULLY")
+        logger.info("DATA INGESTION COMPLETED SUCCESSFULLY")
         logger.info("=" * 80)
         
     except Exception as e:
-        logger.error(f"Error in main execution: {e}")
+        logger.error(f"Error in data ingestion: {e}")
         raise
     finally:
         manager.cleanup()
-
-if __name__ == "__main__":
-    main()
