@@ -1,19 +1,47 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import List, Optional
-from app.models.video import VideoCreate, VideoResponse
-from app.models.analysis import AnalysisCreate, AnalysisResponse
-from app.services.youtube_api import YouTubeAPIService
-from app.services.ml_models import analyze_video
+from pydantic import BaseModel, HttpUrl
+from typing import List, Optional, Dict, Any
+from app.services.youtube_api import YouTubeAPIService, YouTubeAnalyzer
+from app.services.ml_models import analyze_video, predict_fake_news
 from app.database import get_database
 from app.utils.auth import get_current_user
 from app.models.user import User
 import logging
-from pydantic import BaseModel, HttpUrl
-from typing import Dict, Any
+import re
 from datetime import datetime
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+class VideoCreate(BaseModel):
+    video_id: str
+
+class VideoResponse(BaseModel):
+    video_id: str
+    title: str
+    description: str
+    channel_title: str
+    publish_date: str
+    duration: str
+    view_count: int
+    like_count: int
+    dislike_count: int
+    comment_count: int
+    thumbnail_url: str
+    tags: List[str]
+    category: str
+    language: str
+    added_at: str
+    updated_at: str
+
+class AnalysisCreate(BaseModel):
+    analysis_type: str
+
+class AnalysisResponse(BaseModel):
+    video_id: str
+    risk_score: float
+    is_fake: bool
+    details: Dict[str, Any]
 
 class URLIn(BaseModel):
     url: HttpUrl
@@ -26,6 +54,22 @@ class URLAnalysisOut(BaseModel):
     is_fake: bool
     confidence: float
     analyzed_at: str
+
+class VideoUrlInput(BaseModel):
+    url: HttpUrl
+
+class VideoAnalysisResponse(BaseModel):
+    video_id: str
+    title: str
+    channel_title: str
+    fake_probability: float
+    is_fake: bool
+    analysis_details: Dict[str, Any]
+    thumbnail_url: Optional[str]
+    transcript_available: bool
+    comments_available: bool
+
+youtube_analyzer = YouTubeAnalyzer()
 
 @router.post("/", response_model=VideoResponse)
 async def add_video(
@@ -148,28 +192,54 @@ async def get_video_analysis(video_id: str):
     
     return AnalysisResponse(**analysis)
 
-@router.post("/analyze-url", response_model=URLAnalysisOut)
-async def analyze_by_url(payload: URLIn, current_user: Dict[str, Any] = Depends(get_current_user)):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+@router.post("/analyze-url", response_model=VideoAnalysisResponse)
+async def analyze_video_url(
+    video_input: VideoUrlInput,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Analyze YouTube video for fake content"""
     try:
-        result = predict_from_url(payload.url)
-        analyzed_at = datetime.utcnow().isoformat()
-        out = {
-            "status": "success",
-            "video_id": result["video_id"],
-            "title": result["title"],
-            "channel_title": result.get("channel_title", ""),
-            "is_fake": result["is_fake"],
-            "confidence": round(result["probability"] * 100, 2),
-            "analyzed_at": analyzed_at
+        # Extract video ID from URL
+        url = str(video_input.url)
+        pattern = r"(?:v=|\/)([0-9A-Za-z_-]{11})(?:\?|$)"
+        match = re.search(pattern, url)
+        if not match:
+            raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+        
+        video_id = match.group(1)
+        
+        # Get video details
+        details = await youtube_service.get_video_details(video_id)
+        comments = await youtube_service.get_comments(video_id)
+        transcript = await youtube_service.get_transcript(video_id)
+        
+        # Run prediction
+        prediction = predict_fake_news(
+            title=details['title'],
+            description=details['description'],
+            comments=[c['text'] for c in comments]
+        )
+        
+        return {
+            "video_id": video_id,
+            "title": details['title'],
+            "channel_title": details['channel_title'],
+            "fake_probability": prediction['probability'],
+            "is_fake": prediction['is_fake'],
+            "analysis_details": {
+                "view_count": details['view_count'],
+                "like_count": details['like_count'],
+                "comment_count": details['comment_count'],
+                "published_at": details['published_at'],
+                "risk_level": "High" if prediction['probability'] > 0.7 
+                             else "Medium" if prediction['probability'] > 0.3 
+                             else "Low"
+            },
+            "thumbnail_url": details['thumbnail_url'],
+            "transcript_available": bool(transcript),
+            "comments_available": bool(comments)
         }
-        # persist analysis
-        db.video_analyses.insert_one({**out, "user_id": current_user["id"], "created_at": datetime.utcnow()})
-        return out
-    except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except FileNotFoundError as fe:
-        raise HTTPException(status_code=500, detail="Model not found. Train models first.")
+        
     except Exception as e:
+        logger.error(f"Error analyzing video: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
