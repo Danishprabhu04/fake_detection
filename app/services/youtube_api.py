@@ -43,44 +43,93 @@ class YouTubeAPIService:
             logger.error(f"Error fetching video details: {str(e)}")
             raise
 
-    async def get_comments(self, video_id: str, max_results: int = 100) -> List[Dict]:
-        """Get video comments"""
+class YouTubeAnalyzer:
+    def __init__(self):
+        self.api_service = YouTubeAPIService()
+        self.download_dir = "data/downloads"
+        os.makedirs(self.download_dir, exist_ok=True)
+
+    async def analyze_video(self, video_id: str) -> Dict[str, Any]:
+        """Analyze a video comprehensively"""
+        try:
+            # Get basic video details
+            details = await self.api_service.get_video_details(video_id)
+            
+            # Get comments if available
+            comments = await self.get_video_comments(video_id)
+            
+            # Get transcript if available
+            transcript = await self.get_video_transcript(video_id)
+            
+            # Download thumbnail
+            thumbnail_path = await self.download_thumbnail(
+                video_id, 
+                details['thumbnail_url']
+            )
+
+            return {
+                **details,
+                'comments': comments,
+                'transcript': transcript,
+                'thumbnail_path': thumbnail_path,
+                'analysis_metadata': {
+                    'has_comments': bool(comments),
+                    'has_transcript': bool(transcript),
+                    'comment_count': len(comments),
+                    'transcript_length': len(transcript) if transcript else 0
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Error analyzing video: {str(e)}")
+            raise
+
+    async def get_video_comments(self, video_id: str, max_results: int = 100) -> List[Dict]:
+        """Fetch video comments"""
         try:
             comments = []
-            request = self.api.commentThreads().list(
+            request = self.api_service.api.commentThreads().list(
                 part="snippet",
                 videoId=video_id,
-                maxResults=max_results
+                maxResults=max_results,
+                textFormat="plainText"
             )
 
             while request and len(comments) < max_results:
                 response = request.execute()
+                
                 for item in response['items']:
                     comment = item['snippet']['topLevelComment']['snippet']
                     comments.append({
-                        'text': comment['textDisplay'],
                         'author': comment['authorDisplayName'],
+                        'text': comment['textDisplay'],
                         'likes': comment['likeCount'],
                         'published_at': comment['publishedAt']
                     })
-                request = self.api.commentThreads().list_next(request, response)
+
+                request = self.api_service.api.commentThreads().list_next(request, response)
 
             return comments
+
         except Exception as e:
             logger.warning(f"Error fetching comments: {str(e)}")
             return []
 
-    async def get_transcript(self, video_id: str) -> List[Dict]:
-        """Get video transcript"""
+    async def get_video_transcript(self, video_id: str) -> List[Dict]:
+        """Fetch video transcript"""
         try:
-            return YouTubeTranscriptApi.get_transcript(video_id)
+            transcript = YouTubeTranscriptApi.get_transcript(video_id)
+            return transcript
         except Exception as e:
             logger.warning(f"Error fetching transcript: {str(e)}")
             return []
 
     async def download_thumbnail(self, video_id: str, url: str) -> str:
-        """Download video thumbnail"""
+        """Download thumbnail image"""
         try:
+            if not url:
+                return ""
+                
             file_path = f"{self.download_dir}/{video_id}_thumbnail.jpg"
             response = requests.get(url)
             response.raise_for_status()
@@ -93,5 +142,6 @@ class YouTubeAPIService:
             logger.error(f"Error downloading thumbnail: {str(e)}")
             return ""
 
-# Create singleton instance
+# Create singleton instances
 youtube_service = YouTubeAPIService()
+youtube_analyzer = YouTubeAnalyzer()
