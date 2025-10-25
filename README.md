@@ -18,6 +18,7 @@ This system analyzes YouTube videos and their associated metadata to detect pote
 - Apache Spark
 - YouTube Data API key
 - 4GB+ RAM for model training
+- uv package manager
 
 ## Project Structure
 
@@ -46,17 +47,29 @@ cd youtube_fake_detection/backend
 ```
 
 2. Create and activate virtual environment:
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
+uv init
+uv pip install --upgrade pip
+
+# Install individual packages
+uv add fastapi uvicorn[standard] pymongo python-dotenv
+uv add pydantic pydantic-settings
+uv add passlib[bcrypt] python-jose[cryptography]
+uv add python-multipart requests pyspark
+uv add numpy pandas scikit-learn
+uv add textblob nltk beautifulsoup4
+uv add pillow tesseract youtube-transcript-api
+uv add google-api-python-client google-auth google-auth-oauthlib
+uv add pytesseract opencv-python
+uv add seaborn matplotlib plotly
+uv add wordcloud networkx
+
+# Or install all requirements at once
+uv add -r requirements.txt
 ```
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-4. Set up environment variables:
+5. Set up environment variables:
 ```bash
 cp .env.example .env
 # Edit .env with your configuration:
@@ -154,6 +167,24 @@ Training configurations:
 - Memory limit: 2048MB (configurable)
 - Optimization: HashingVectorizer for memory efficiency
 
+## Package Management with uv
+
+Update dependencies:
+```bash
+uv pip freeze > requirements.txt  # Update requirements.txt
+uv pip install -r requirements.txt --upgrade  # Upgrade all packages
+```
+
+Install new package:
+```bash
+uv add package_name
+```
+
+Remove package:
+```bash
+uv pip uninstall package_name
+```
+
 ## Monitoring and Maintenance
 
 1. Check model status:
@@ -200,6 +231,16 @@ BATCH_SIZE=500 python tester.py train_models
 python -X maxsize=2048MB tester.py train_models
 ```
 
+5. Package management issues:
+```bash
+# Reset virtual environment
+deactivate
+rm -rf .venv
+python -m venv .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+```
+
 ## Contributing
 
 1. Fork the repository
@@ -221,3 +262,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - YouTube Data API
 - MongoDB Team
 - FastAPI Community
+- Astral (uv package manager)
