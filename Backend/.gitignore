@@ -1,0 +1,142 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Logs
+*.log
+logs/
+data_ingestion.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+mongo/
+mongodb/
+
+# Data files
+data/downloads/
+*.csv
+*.xlsx
+*.xls
+*.json
+
+# Models and large files
+data/models/*.pkl
+data/models/*.joblib
+data/models/*.h5
+data/models/*.pt
+data/models/*.pth
+data/models/*.bin
+
+# OS specific
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Environment and secrets
+.env
+.env.local
+.env.prod
+secrets/
+config/secrets/
+
+# Node modules (if any frontend build artifacts)
+node_modules/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Backup files
+*.bak
+*.backup
+*.swp
+*.swo
+
+# Cache
+.cache/
+*.cache
+
+# Temp files
+tmp/
+temp/
+*.temp
+
+# Package manager lock files (optional - uncomment if you want to track)
+# uv.lock
+# poetry.lock
+# Pipfile.lock
+
+# IDE Generated files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+*.code-workspace
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Compiled files
+*.o
+*.a
+*.lib
+
+# System files
+$RECYCLE.BIN/
+ehthumbs.db
+
+# Application specific
+data/
+!data/.gitkeep
